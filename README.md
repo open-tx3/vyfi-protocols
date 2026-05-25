@@ -4,7 +4,7 @@ Tx3 models of VyFinance protocols.
 
 ## Protocols
 
-- [`vyfi`](./vyfi/)
+- [`vyfi-dex`](./vyfi-dex/)
 
 ## Provenance
 
