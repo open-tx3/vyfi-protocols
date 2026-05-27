@@ -11,16 +11,16 @@
 
 // --- Parties ---
 
-// The user submitting the order
+/// The end user submitting the AMM order.
 party User;
 
-// Order script address (per-pool, provided per-call)
+/// Per-pool order script address; supplied dynamically per transaction.
 party OrderScript;
 
 // --- Environment ---
 
 env {
-    // Process fee charged by VyFi batchers (1.9 ADA)
+    /// Process fee charged by VyFi batchers, in lovelace (typically 1.9 ADA).
     process_fee: Int,
 }
 
@@ -60,14 +60,13 @@ type RemoveLiqMinAmounts {
 
 // --- Transactions ---
 
-// Swap ADA for Token (A → B)
-// User sends ADA to the order address with swap datum
+/// Swap ADA for the pool's token (A → B) by posting an order to the script address.
 tx swap_a_to_b(
-    // User credentials: payment_cred (28 bytes) || stake_cred (28 bytes)
+    /// User credentials: payment_cred (28 bytes) || stake_cred (28 bytes).
     user_creds: Bytes,
-    // Amount of ADA (lovelace) to swap
+    /// Amount of ADA (lovelace) to swap.
     swap_amount: Int,
-    // Minimum amount of token B to receive
+    /// Minimum amount of token B to receive.
     min_out: Int,
 ) {
     input source {
@@ -92,20 +91,19 @@ tx swap_a_to_b(
     }
 }
 
-// Swap Token for ADA (B → A)
-// User sends tokens + min ADA to the order address with swap datum
+/// Swap the pool's token for ADA (B → A) by posting an order to the script address.
 tx swap_b_to_a(
-    // User credentials: payment_cred (28 bytes) || stake_cred (28 bytes)
+    /// User credentials: payment_cred (28 bytes) || stake_cred (28 bytes).
     user_creds: Bytes,
-    // Token B policy ID
+    /// Token B policy ID.
     token_policy: Bytes,
-    // Token B asset name
+    /// Token B asset name.
     token_name: Bytes,
-    // Amount of token B to swap
+    /// Amount of token B to swap.
     token_amount: Int,
-    // Minimum amount of ADA (lovelace) to receive
+    /// Minimum amount of ADA (lovelace) to receive.
     min_out: Int,
-    // ADA to attach to order UTxO (min UTxO + process fee)
+    /// ADA to attach to the order UTxO (min UTxO + process fee).
     order_ada: Int,
 ) {
     locals {
@@ -134,20 +132,19 @@ tx swap_b_to_a(
     }
 }
 
-// Add liquidity to a pool
-// User sends ADA + tokens to the order address
+/// Add liquidity to a pool by depositing ADA and the paired token.
 tx add_liquidity(
-    // User credentials: payment_cred (28 bytes) || stake_cred (28 bytes)
+    /// User credentials: payment_cred (28 bytes) || stake_cred (28 bytes).
     user_creds: Bytes,
-    // Amount of ADA (lovelace) to deposit
+    /// Amount of ADA (lovelace) to deposit.
     ada_amount: Int,
-    // Token B policy ID
+    /// Token B policy ID.
     token_policy: Bytes,
-    // Token B asset name
+    /// Token B asset name.
     token_name: Bytes,
-    // Amount of token B to deposit
+    /// Amount of token B to deposit.
     token_amount: Int,
-    // Minimum LP tokens to receive
+    /// Minimum LP tokens to receive.
     desired_lp: Int,
 ) {
     locals {
@@ -176,22 +173,21 @@ tx add_liquidity(
     }
 }
 
-// Remove liquidity from a pool
-// User sends LP tokens to the order address
+/// Remove liquidity from a pool by burning LP tokens.
 tx remove_liquidity(
-    // User credentials: payment_cred (28 bytes) || stake_cred (28 bytes)
+    /// User credentials: payment_cred (28 bytes) || stake_cred (28 bytes).
     user_creds: Bytes,
-    // LP token policy ID
+    /// LP token policy ID.
     lp_policy: Bytes,
-    // LP token asset name
+    /// LP token asset name.
     lp_name: Bytes,
-    // Amount of LP tokens to burn
+    /// Amount of LP tokens to burn.
     lp_amount: Int,
-    // Minimum ADA (lovelace) to receive back
+    /// Minimum ADA (lovelace) to receive back.
     min_out_ada: Int,
-    // Minimum token B to receive back
+    /// Minimum token B to receive back.
     min_out_token: Int,
-    // ADA to attach to order UTxO (min UTxO + process fee)
+    /// ADA to attach to the order UTxO (min UTxO + process fee).
     order_ada: Int,
 ) {
     locals {
