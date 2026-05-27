@@ -5,6 +5,7 @@ version = "0.1.0"
 description = "VyFi DEX - AMM order submission protocol"
 main = "main.tx3"
 readme = "README.md"
+logo = "logo.png"
 repository = "https://github.com/open-tx3/vyfi-protocols"
 
 [ledger]
