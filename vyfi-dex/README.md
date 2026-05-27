@@ -1,17 +1,22 @@
 # VyFi DEX
 
-tx3 protocol for [VyFi](https://vyfi.io/) — AMM DEX order submission on Cardano.
+[VyFinance](https://vyfi.io/) is a Cardano-native DeFi platform offering an AMM-based decentralised exchange, liquid staking, and yield-bearing vaults. The DEX is the foundational product: users swap between ADA and Cardano-native tokens, and liquidity providers deposit token pairs into pools to earn a share of swap fees. VyFi runs its own batcher infrastructure — users submit order intents on-chain, and VyFi's batchers execute them in batches against the pool UTxOs.
 
-> **Status: WIP** — This tx3 off-chain implementation is under testing and may not cover all edge cases yet.
+This tx3 covers the **user-facing order submission and cancellation** surface of the DEX: swap and liquidity intents, sent to per-pool order addresses. Batcher-side execution (consuming orders, updating pool state, distributing results) is not in scope.
 
 ## Overview
 
-VyFi is an AMM-based DEX on Cardano using a two-step order model:
+VyFi uses a two-step order model:
 
-1. **User submits order** — sends funds + datum to a pool-specific order script address (no scripts executed)
-2. **Batcher processes order** — VyFi infrastructure consumes the order + pool UTxO and distributes results
+1. **User submits the order** — the user sends funds + an inline datum to a pool-specific order script address. No validators execute on submission.
+2. **Batcher processes the order** — VyFi infrastructure consumes the order alongside the pool UTxO and distributes the results back to users.
 
-This tx3 implements the **user-facing transactions only** (step 1). Each pool has its own order address, provided dynamically per call via the `OrderScript` party.
+Each pool has its own order address; the correct address must be passed dynamically per call via the `OrderScript` party. Pool addresses, token identifiers, and current ratios are queried from the VyFi public API.
+
+Scope of this tx3:
+
+- Implemented: swap (both directions), add liquidity, remove liquidity — all user-side order submission.
+- Not implemented: batcher consumption of orders, pool-state updates.
 
 ## Transactions
 
@@ -22,40 +27,45 @@ This tx3 implements the **user-facing transactions only** (step 1). Each pool ha
 | `add_liquidity` | Deposit ADA + tokens into a liquidity pool |
 | `remove_liquidity` | Withdraw liquidity by sending LP tokens |
 
-## Important Considerations
+## Important considerations
 
-- **No script execution on submission:** Order submissions are plain payments with inline datums — no validators are invoked. This means no collateral is needed.
-- **Pool-specific order address:** The `OrderScript` party must be set to the correct order address for each pool. Pool data is available from the VyFi API.
-- **Process fee:** VyFi batchers charge a process fee (currently 1.9 ADA) included in each order.
-- **User credentials format:** The `user_creds` parameter is a 56-byte value: payment credential (28 bytes) concatenated with staking credential (28 bytes).
-- **Batcher-side not implemented:** This tx3 does not cover batcher operations (consuming orders, updating pool state). Only user-facing order submission and cancellation.
+- **No script execution on submission.** Order submissions are plain payments with inline datums — no validators are invoked. No collateral is needed.
+- **Pool-specific order address.** The `OrderScript` party must be set to the correct order address for each pool. Pool data is available from the VyFi API.
+- **Process fee.** VyFi batchers charge a process fee (currently 1.9 ADA) included in each order.
+- **User credentials format.** The `user_creds` parameter is a 56-byte value: payment credential (28 bytes) concatenated with staking credential (28 bytes).
+- **Batcher-side not implemented.** This tx3 covers user-facing order submission only. Batcher operations (consuming orders, updating pool state) are out of scope.
 
-## Caller Preparation
+## Caller preparation
 
 ### All transactions
 
-- `user_creds: Bytes` — 56-byte hex value: payment credential (28 bytes) + staking credential (28 bytes). Must be constructed from the user's wallet address by extracting the raw credential hashes and concatenating them.
-- `OrderScript` party address — Must be set to the correct **pool-specific** order address. Query the VyFi API (`/lp?networkId=1`) for pool data including the order address.
+| Parameter | Source |
+|---|---|
+| `user_creds: Bytes` | 56-byte hex value: payment credential (28 bytes) + staking credential (28 bytes). Constructed from the user's wallet address by extracting the raw credential hashes and concatenating them. |
+| `OrderScript` party address | The correct **pool-specific** order address. Query the VyFi API (`/lp?networkId=1`) for pool data including the order address. |
 
 ### `swap_b_to_a` / `remove_liquidity`
 
-- `order_ada: Int` — The ADA amount to include in the order UTxO (min UTxO + process fee). Must account for the tokens being sent.
+| Parameter | Source |
+|---|---|
+| `order_ada: Int` | ADA amount to include in the order UTxO (min UTxO + process fee). Must account for the tokens being sent. |
 
 ### `add_liquidity`
 
-- `desired_lp: Int` — The desired LP token amount. Must be calculated based on current pool ratio.
+| Parameter | Source |
+|---|---|
+| `desired_lp: Int` | Desired LP token amount. Calculated from the current pool ratio. |
 
 ### Pool data (query VyFi API before any transaction)
 
-- Pool order address (for `OrderScript` party)
-- Token policy ID and asset name (for token parameters)
-- Current pool ratio (for calculating swap amounts, LP tokens)
-- Process fee: currently 1.9 ADA
+| Value | Source |
+|---|---|
+| Pool order address (for `OrderScript` party) | VyFi API `/lp?networkId=1` |
+| Token policy ID and asset name | VyFi API |
+| Current pool ratio (for swap amounts, LP tokens) | VyFi API |
+| Process fee | VyFi API (currently 1.9 ADA) |
 
-## tx3 Limitations
+## References
 
-No significant tx3 limitations were encountered. Order submissions are plain payments with inline datums — no script execution, no complex redeemers. The two-step model means all validator logic runs on the batcher side (not implemented in this tx3).
-
-## Smart Contracts
-
-- Pool data source: VyFi API (`/lp?networkId=1`)
+- **Homepage / app:** [vyfi.io](https://vyfi.io/)
+- **Pool data API:** [`/lp?networkId=1`](https://api.vyfi.io/lp?networkId=1)
